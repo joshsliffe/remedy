@@ -4,18 +4,2543 @@
     <title>Production Schedule Builder</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
-    <div style="max-width: 800px; margin: 50px auto; padding: 20px; font-family: Arial, sans-serif;">
-        <h1>Production Schedule Builder</h1>
-        <p>✅ HTML file is working!</p>
-        <p>🔄 Full app coming soon...</p>
-        <div style="background: #f0f9ff; padding: 15px; border-radius: 8px; border: 1px solid #0ea5e9;">
-            <strong>Instructions:</strong><br>
-            • Open the template <a href="https://docs.google.com/spreadsheets/d/1cRd-x0g8LHAvYZH1RMxfN3YfjMS6jttQZzCTcfFKNIE/edit?gid=819673069#gid=819673069" target="_blank">HERE</a><br>
-            • Duplicate to create your own project<br>
-            • Full app deployment in progress!
-        </div>
+    <div id="root"></div>
+    <script type="text/babel">
+        // PASTE THE ENTIRE REACT COMPONENT CODE FROM OUR MAIN ARTIFACT HERE
+        // Go back to the "Production Schedule Builder - Fixed Crew Contacts" artifact
+// Constants
+const CLIENT_ID = "326574680475-rp2ln01nqhp0j3eol3v652v7naaf3shp.apps.googleusercontent.com";
+const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
+const SCHEDULE_START_ROW = 15;
+const SCHEDULE_ROW_COUNT = 36;
+const CREW_START_ROW = 55;
+const TALENT_START_ROW = 69;
+
+const initialRows = [
+  { id: 1, start: "9:00 AM", item: "Crew Call Time", duration: 0, notes: "" },
+  { id: 2, start: "9:00 AM", item: "Load In & Setup", duration: 120, notes: "" },
+  { id: 3, start: "11:00 AM", item: "Film Product Stylized Shots", duration: 90, notes: "" },
+];
+
+// Google Sheets standard color palette with more colors, fewer grays
+const GOOGLE_SHEETS_COLORS = [
+  { name: "White", value: null, rgb: "rgb(255, 255, 255)" },
+  { name: "Light Gray", value: { red: 0.9, green: 0.9, blue: 0.9 }, rgb: "rgb(230, 230, 230)" },
+  { name: "Gray", value: { red: 0.6, green: 0.6, blue: 0.6 }, rgb: "rgb(153, 153, 153)" },
+  { name: "Dark Gray", value: { red: 0.4, green: 0.4, blue: 0.4 }, rgb: "rgb(102, 102, 102)" },
+  { name: "Light Red 3", value: { red: 0.99, green: 0.89, blue: 0.89 }, rgb: "rgb(252, 229, 229)" },
+  { name: "Light Red 2", value: { red: 0.98, green: 0.73, blue: 0.73 }, rgb: "rgb(249, 186, 186)" },
+  { name: "Red", value: { red: 0.91, green: 0.26, blue: 0.21 }, rgb: "rgb(232, 67, 53)" },
+  { name: "Dark Red", value: { red: 0.8, green: 0.15, blue: 0.15 }, rgb: "rgb(204, 38, 38)" },
+  { name: "Light Orange 3", value: { red: 0.99, green: 0.95, blue: 0.89 }, rgb: "rgb(254, 243, 229)" },
+  { name: "Light Orange 2", value: { red: 0.99, green: 0.87, blue: 0.73 }, rgb: "rgb(254, 222, 186)" },
+  { name: "Orange", value: { red: 0.98, green: 0.55, blue: 0.09 }, rgb: "rgb(249, 141, 23)" },
+  { name: "Dark Orange", value: { red: 0.92, green: 0.38, blue: 0.07 }, rgb: "rgb(235, 97, 18)" },
+  { name: "Light Yellow 3", value: { red: 0.99, green: 0.98, blue: 0.89 }, rgb: "rgb(254, 249, 229)" },
+  { name: "Light Yellow 2", value: { red: 0.99, green: 0.95, blue: 0.73 }, rgb: "rgb(254, 243, 186)" },
+  { name: "Yellow", value: { red: 0.98, green: 0.84, blue: 0.25 }, rgb: "rgb(249, 214, 64)" },
+  { name: "Dark Yellow", value: { red: 0.88, green: 0.74, blue: 0.09 }, rgb: "rgb(224, 189, 23)" },
+  { name: "Light Green 3", value: { red: 0.89, green: 0.99, blue: 0.89 }, rgb: "rgb(229, 252, 229)" },
+  { name: "Light Green 2", value: { red: 0.73, green: 0.98, blue: 0.73 }, rgb: "rgb(186, 249, 186)" },
+  { name: "Green", value: { red: 0.20, green: 0.66, blue: 0.32 }, rgb: "rgb(52, 168, 83)" },
+  { name: "Dark Green", value: { red: 0.13, green: 0.54, blue: 0.13 }, rgb: "rgb(33, 138, 33)" },
+  { name: "Light Blue 3", value: { red: 0.89, green: 0.95, blue: 0.99 }, rgb: "rgb(229, 243, 252)" },
+  { name: "Light Blue 2", value: { red: 0.73, green: 0.87, blue: 0.98 }, rgb: "rgb(186, 222, 249)" },
+  { name: "Blue", value: { red: 0.26, green: 0.52, blue: 0.96 }, rgb: "rgb(66, 133, 244)" },
+  { name: "Dark Blue", value: { red: 0.11, green: 0.37, blue: 0.76 }, rgb: "rgb(28, 95, 194)" },
+  { name: "Light Purple 3", value: { red: 0.95, green: 0.89, blue: 0.99 }, rgb: "rgb(243, 229, 252)" },
+  { name: "Light Purple 2", value: { red: 0.87, green: 0.73, blue: 0.98 }, rgb: "rgb(222, 186, 249)" },
+  { name: "Purple", value: { red: 0.62, green: 0.38, blue: 0.86 }, rgb: "rgb(158, 97, 219)" },
+  { name: "Dark Purple", value: { red: 0.48, green: 0.26, blue: 0.74 }, rgb: "rgb(122, 66, 189)" },
+  { name: "Light Cyan 3", value: { red: 0.89, green: 0.99, blue: 0.99 }, rgb: "rgb(229, 252, 252)" },
+  { name: "Light Cyan 2", value: { red: 0.73, green: 0.98, blue: 0.98 }, rgb: "rgb(186, 249, 249)" },
+  { name: "Cyan", value: { red: 0.18, green: 0.80, blue: 0.84 }, rgb: "rgb(46, 204, 214)" },
+  { name: "Dark Cyan", value: { red: 0.13, green: 0.64, blue: 0.68 }, rgb: "rgb(33, 163, 173)" }
+];
+
+// Utility functions with error handling
+function parseTime(timeStr) {
+  if (!timeStr || typeof timeStr !== 'string') return null;
+  
+  try {
+    const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!match) return null;
+    
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const period = match[3].toUpperCase();
+    
+    if (isNaN(hours) || isNaN(minutes) || hours < 1 || hours > 12 || minutes < 0 || minutes > 59) {
+      return null;
+    }
+    
+    if (period === 'PM' && hours !== 12) hours += 12;
+    if (period === 'AM' && hours === 12) hours = 0;
+    
+    return { hours, minutes };
+  } catch (error) {
+    console.warn('Error parsing time:', timeStr, error);
+    return null;
+  }
+}
+
+function formatTime(hours, minutes) {
+  try {
+    if (typeof hours !== 'number' || typeof minutes !== 'number' || 
+        hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      return "Invalid Time";
+    }
+    
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  } catch (error) {
+    console.warn('Error formatting time:', { hours, minutes }, error);
+    return "Invalid Time";
+  }
+}
+
+function addMinutes(timeStr, minutesToAdd) {
+  const parsed = parseTime(timeStr);
+  if (!parsed || typeof minutesToAdd !== 'number') return timeStr;
+  
+  try {
+    let totalMinutes = parsed.hours * 60 + parsed.minutes + minutesToAdd;
+    const hours = Math.floor(totalMinutes / 60) % 24;
+    const minutes = totalMinutes % 60;
+    
+    return formatTime(hours, minutes);
+  } catch (error) {
+    console.warn('Error adding minutes:', { timeStr, minutesToAdd }, error);
+    return timeStr;
+  }
+}
+
+function minutesToSheetTime(minutes) {
+  if (!minutes || minutes === 0) return "12:00:00 AM";
+  
+  try {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    
+    if (hours === 0) {
+      return `12:${mins.toString().padStart(2, '0')}:00 AM`;
+    } else if (hours < 12) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:00 AM`;
+    } else {
+      const displayHours = hours === 12 ? 12 : hours - 12;
+      return `${displayHours}:${mins.toString().padStart(2, '0')}:00 PM`;
+    }
+  } catch (error) {
+    console.warn('Error converting minutes to sheet time:', minutes, error);
+    return "12:00:00 AM";
+  }
+}
+
+function sheetTimeToMinutes(timeStr) {
+  if (!timeStr || typeof timeStr !== 'string') return 0;
+  
+  try {
+    const match = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);
+    if (!match) return 0;
+    
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const period = match[4];
+    
+    if (isNaN(hours) || isNaN(minutes)) return 0;
+    
+    if (!period) {
+      return hours * 60 + minutes;
+    }
+    
+    if (period && period.toUpperCase() === 'PM' && hours !== 12) {
+      hours += 12;
+    } else if (period && period.toUpperCase() === 'AM' && hours === 12) {
+      hours = 0;
+    }
+    
+    return hours * 60 + minutes;
+  } catch (error) {
+    console.warn('Error converting sheet time to minutes:', timeStr, error);
+    return 0;
+  }
+}
+
+function adjustTimes(rows, userStartTime = null) {
+  if (!rows || !Array.isArray(rows) || !rows.length) return [];
+  
+  const startTime = userStartTime || rows[0]?.start || "9:00 AM";
+  let currentTime = startTime;
+  
+  return rows.map((row) => {
+    if (!row || typeof row.duration !== 'number') {
+      return { ...row, start: currentTime, end: currentTime };
+    }
+    
+    const endTime = addMinutes(currentTime, row.duration);
+    const adjustedRow = { ...row, start: currentTime, end: endTime };
+    currentTime = endTime;
+    return adjustedRow;
+  });
+}
+
+// Debounce utility
+function debounce(func, wait) {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+}
+
+async function loadGoogleAPI() {
+  try {
+    if (window.gapi) return;
+    
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://apis.google.com/js/api.js';
+      script.onload = () => {
+        window.gapi.load('client:auth2', resolve);
+      };
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  } catch (error) {
+    console.error('Failed to load Google API:', error);
+    throw error;
+  }
+}
+
+// Styles
+const cellStyle = {
+  border: "none",
+  borderBottom: "1px solid #e5e7eb",
+  padding: "16px 16px",
+  fontSize: "14px",
+  verticalAlign: "middle"
+};
+
+const timeInputStyle = {
+  width: "100%",
+  padding: "8px 12px",
+  border: "1px solid #d1d5db",
+  borderRadius: "6px",
+  fontSize: "14px",
+  fontWeight: "500",
+  color: "#1f2937",
+  backgroundColor: "#f9fafb",
+  minWidth: "70px"
+};
+
+const itemInputStyle = {
+  width: "100%",
+  padding: "8px 12px",
+  border: "1px solid #d1d5db",
+  borderRadius: "6px",
+  fontSize: "14px",
+  color: "#1f2937",
+  backgroundColor: "white",
+  minWidth: "200px",
+  marginLeft: "8px"
+};
+
+const timeDisplayStyle = {
+  fontSize: "14px",
+  fontWeight: "500",
+  color: "#374151",
+  fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+};
+
+const durationCellStyle = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "4px",
+  alignItems: "flex-start"
+};
+
+const durationInputContainer = {
+  display: "flex",
+  alignItems: "center",
+  gap: "6px"
+};
+
+const durationInputStyle = {
+  width: "70px",
+  padding: "6px 8px",
+  border: "1px solid #d1d5db",
+  borderRadius: "4px",
+  fontSize: "14px",
+  color: "#1f2937",
+  textAlign: "right"
+};
+
+const durationLabelStyle = {
+  fontSize: "13px",
+  color: "#6b7280",
+  fontWeight: "500"
+};
+
+const actionButtonContainer = {
+  display: "flex",
+  gap: "4px",
+  alignItems: "center",
+  justifyContent: "flex-start"
+};
+
+const removeButton = {
+  color: "#dc2626",
+  backgroundColor: "#fef2f2",
+  border: "1px solid #fecaca",
+  cursor: "pointer",
+  fontSize: "14px",
+  padding: "6px 8px",
+  borderRadius: "4px",
+  fontWeight: "500",
+  minWidth: "28px",
+  height: "28px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  transition: "all 0.15s ease"
+};
+
+const moveButton = {
+  backgroundColor: "#f9fafb",
+  border: "1px solid #d1d5db",
+  cursor: "pointer",
+  fontSize: "12px",
+  padding: "4px 6px",
+  borderRadius: "4px",
+  minWidth: "24px",
+  height: "24px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  transition: "all 0.15s ease",
+  color: "#6b7280"
+};
+
+const buttonStyle = {
+  padding: "12px 20px",
+  borderRadius: "8px",
+  border: "none",
+  cursor: "pointer",
+  fontSize: "14px",
+  margin: "0 6px",
+  fontWeight: "600",
+  transition: "all 0.15s ease",
+  boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)"
+};
+
+const checkboxStyle = {
+  width: "16px",
+  height: "16px",
+  cursor: "pointer"
+};
+
+const groupActionButtonStyle = {
+  ...buttonStyle,
+  padding: "8px 12px",
+  fontSize: "13px",
+  margin: "0 2px"
+};
+
+// Color Picker Component with improved outside click handling
+const ColorPicker = ({ currentColor, onColorChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const handleColorSelect = useCallback((color) => {
+    onColorChange(color.value, color.rgb);
+    setIsOpen(false);
+  }, [onColorChange]);
+
+  const handleOutsideClick = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+  
+  return (
+    <div style={{ position: "relative" }}>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        style={{
+          width: "20px",
+          height: "20px",
+          borderRadius: "3px",
+          border: "1px solid #d1d5db",
+          backgroundColor: currentColor || "rgb(255, 255, 255)",
+          cursor: "pointer",
+          boxShadow: "0 1px 2px rgba(0,0,0,0.1)"
+        }}
+        title="Change background color"
+        aria-label="Change background color"
+      />
+      
+      {isOpen && (
+        <>
+          <div style={{
+            position: "absolute",
+            top: "25px",
+            left: "0",
+            backgroundColor: "white",
+            border: "1px solid #d1d5db",
+            borderRadius: "6px",
+            padding: "8px",
+            boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+            zIndex: 1000,
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "4px",
+            width: "120px"
+          }}>
+            {GOOGLE_SHEETS_COLORS.map((color, index) => (
+              <div
+                key={index}
+                onClick={() => handleColorSelect(color)}
+                style={{
+                  width: "20px",
+                  height: "20px",
+                  backgroundColor: color.rgb,
+                  border: "1px solid #d1d5db",
+                  borderRadius: "2px",
+                  cursor: "pointer"
+                }}
+                title={color.name}
+                aria-label={`Select ${color.name} color`}
+              />
+            ))}
+          </div>
+          <div 
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 999
+            }}
+            onClick={handleOutsideClick}
+          />
+        </>
+      )}
     </div>
+  );
+};
+
+const ScheduleRow = ({ row, index, onUpdate, onUpdateColor, onRemove, onMoveUp, onMoveDown, isFirst, userStartTime, setUserStartTime, canMoveUp, canMoveDown, isSelected, onSelect }) => {
+  const handleUpdate = useCallback((field, value) => {
+    onUpdate(index, { [field]: value });
+  }, [onUpdate, index]);
+
+  const handleColorChange = useCallback((googleColor, rgbColor) => {
+    onUpdateColor(index, googleColor, rgbColor);
+  }, [onUpdateColor, index]);
+
+  const handleSelect = useCallback((e) => {
+    onSelect(index, e);
+  }, [onSelect, index]);
+
+  const handleMoveUp = useCallback(() => {
+    onMoveUp(index);
+  }, [onMoveUp, index]);
+
+  const handleMoveDown = useCallback(() => {
+    onMoveDown(index);
+  }, [onMoveDown, index]);
+
+  const handleRemove = useCallback(() => {
+    onRemove(index);
+  }, [onRemove, index]);
+
+  let rowBackgroundColor;
+  if (row.backgroundColor) {
+    rowBackgroundColor = row.backgroundColor;
+  } else {
+    rowBackgroundColor = index % 2 === 0 ? '#ffffff' : '#f8fafc';
+  }
+  
+  // Add a subtle border for selected rows instead of changing background
+  const rowBorderStyle = isSelected ? '2px solid #3b82f6' : '1px solid transparent';
+
+  return (
+    <tr style={{ 
+      backgroundColor: rowBackgroundColor,
+      border: rowBorderStyle,
+      transition: 'all 0.15s ease'
+    }}>
+      <td style={cellStyle}>
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={handleSelect}
+          style={checkboxStyle}
+          aria-label={`Select row ${index + 1}`}
+        />
+      </td>
+      <td style={cellStyle}>
+        {isFirst ? (
+          <input 
+            style={timeInputStyle} 
+            value={userStartTime} 
+            onChange={(e) => setUserStartTime(e.target.value)} 
+            placeholder="9:00 AM"
+            aria-label="Start time"
+          />
+        ) : (
+          <span style={timeDisplayStyle}>{row.start}</span>
+        )}
+      </td>
+      <td style={cellStyle}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <ColorPicker 
+            currentColor={row.backgroundColor}
+            onColorChange={handleColorChange}
+          />
+          <input 
+            style={itemInputStyle} 
+            value={row.item || ""} 
+            onChange={(e) => handleUpdate('item', e.target.value)} 
+            placeholder="Schedule item"
+            aria-label="Schedule item"
+          />
+        </div>
+      </td>
+      <td style={cellStyle}>
+        <input 
+          style={{
+            width: "100%",
+            padding: "8px 12px",
+            border: "1px solid #d1d5db",
+            borderRadius: "6px",
+            fontSize: "14px",
+            color: "#1f2937",
+            backgroundColor: "white",
+            minWidth: "200px"
+          }} 
+          value={row.notes || ""} 
+          onChange={(e) => handleUpdate('notes', e.target.value)} 
+          placeholder="Notes..."
+          aria-label="Notes"
+        />
+      </td>
+      <td style={cellStyle}>
+        <span style={timeDisplayStyle}>{row.end}</span>
+      </td>
+      <td style={cellStyle}>
+        <div style={durationCellStyle}>
+          <div style={durationInputContainer}>
+            <input
+              type="number"
+              style={durationInputStyle}
+              value={row.duration || 0}
+              onChange={(e) => handleUpdate('duration', parseInt(e.target.value, 10) || 0)}
+              min="0"
+              placeholder="0"
+              aria-label="Duration in minutes"
+            />
+            <span style={durationLabelStyle}>min</span>
+          </div>
+        </div>
+      </td>
+      <td style={cellStyle}>
+        <div style={actionButtonContainer}>
+          <button 
+            onClick={handleMoveUp} 
+            disabled={!canMoveUp}
+            style={{ ...moveButton, opacity: canMoveUp ? 1 : 0.4 }}
+            title="Move up"
+            aria-label="Move row up"
+          >
+            ↑
+          </button>
+          <button 
+            onClick={handleMoveDown} 
+            disabled={!canMoveDown}
+            style={{ ...moveButton, opacity: canMoveDown ? 1 : 0.4 }}
+            title="Move down"
+            aria-label="Move row down"
+          >
+            ↓
+          </button>
+          <button 
+            onClick={handleRemove} 
+            style={removeButton}
+            title="Remove"
+            aria-label="Remove row"
+          >
+            ×
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+};
+
+function ScheduleApp() {
+  const [rows, setRows] = useState(initialRows);
+  const [userStartTime, setUserStartTime] = useState(rows[0].start);
+  const [spreadsheetId, setSpreadsheetId] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [gapiLoaded, setGapiLoaded] = useState(false);
+  const [selectedRows, setSelectedRows] = useState(new Set());
+  const [lastSelectedIndex, setLastSelectedIndex] = useState(null);
+  const [projectName, setProjectName] = useState("");
+  const [clientInfo, setClientInfo] = useState("");
+  const [shootDate, setShootDate] = useState("");
+  const [error, setError] = useState(null);
+  const [crewContacts, setCrewContacts] = useState([
+    { title: "", name: "", phone: "" },
+    { title: "", name: "", phone: "" },
+    { title: "", name: "", phone: "" }
+  ]);
+  const [locations, setLocations] = useState([
+    "",
+    "",
+    ""
+  ]);
+  const [crew, setCrew] = useState([
+    { position: "", name: "", phone: "", email: "" },
+    { position: "", name: "", phone: "", email: "" },
+    { position: "", name: "", phone: "", email: "" },
+    { position: "", name: "", phone: "", email: "" },
+    { position: "", name: "", phone: "", email: "" },
+    { position: "", name: "", phone: "", email: "" },
+    { position: "", name: "", phone: "", email: "" },
+    { position: "", name: "", phone: "", email: "" },
+    { position: "", name: "", phone: "", email: "" },
+    { position: "", name: "", phone: "", email: "" }
+  ]);
+  const [talent, setTalent] = useState([
+    { role: "", name: "", phone: "", email: "" },
+    { role: "", name: "", phone: "", email: "" },
+    { role: "", name: "", phone: "", email: "" },
+    { role: "", name: "", phone: "", email: "" },
+    { role: "", name: "", phone: "", email: "" },
+    { role: "", name: "", phone: "", email: "" },
+    { role: "", name: "", phone: "", email: "" },
+    { role: "", name: "", phone: "", email: "" },
+    { role: "", name: "", phone: "", email: "" },
+    { role: "", name: "", phone: "", email: "" }
+  ]);
+  const [sunrise, setSunrise] = useState("");
+  const [sunset, setSunset] = useState("");
+  const [clientLogoUrl, setClientLogoUrl] = useState("");
+
+  // Memoized calculations
+  const displayRows = useMemo(() => adjustTimes(rows, userStartTime), [rows, userStartTime]);
+
+  const calculateTimeOnSet = useMemo(() => {
+    if (displayRows.length === 0) return "0:00";
+    
+    const firstStart = displayRows[0]?.start;
+    const lastEnd = displayRows[displayRows.length - 1]?.end;
+    
+    if (!firstStart || !lastEnd) return "0:00";
+    
+    try {
+      const startTime = parseTime(firstStart);
+      const endTime = parseTime(lastEnd);
+      
+      if (!startTime || !endTime) return "0:00";
+      
+      let startMinutes = startTime.hours * 60 + startTime.minutes;
+      let endMinutes = endTime.hours * 60 + endTime.minutes;
+      
+      if (endMinutes < startMinutes) {
+        endMinutes += 24 * 60;
+      }
+      
+      const totalMinutes = endMinutes - startMinutes;
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      
+      return `${hours}:${minutes.toString().padStart(2, '0')}`;
+    } catch (e) {
+      console.warn('Error calculating time on set:', e);
+      return "0:00";
+    }
+  }, [displayRows]);
+
+  // Load Google API with error handling
+  useEffect(() => {
+    const initializeGoogleAPI = async () => {
+      try {
+        await loadGoogleAPI();
+        await window.gapi.client.init({
+          clientId: CLIENT_ID,
+          scope: SCOPES
+        });
+        await window.gapi.client.load("sheets", "v4");
+        setGapiLoaded(true);
+        setError(null);
+      } catch (error) {
+        console.error('Failed to initialize Google API:', error);
+        setError('Failed to load Google Sheets integration. Please refresh and try again.');
+      }
+    };
+
+    initializeGoogleAPI();
+  }, []);
+
+  // Add global styles with proper cleanup
+  useEffect(() => {
+    const globalStyles = `
+      input[type="time"], input[type="date"] {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: textfield !important;
+      }
+      
+      input[type="time"]::-webkit-calendar-picker-indicator,
+      input[type="date"]::-webkit-calendar-picker-indicator {
+        background: transparent;
+        color: #6b7280;
+      }
+      
+      input[type="time"]::-webkit-inner-spin-button,
+      input[type="time"]::-webkit-outer-spin-button,
+      input[type="date"]::-webkit-inner-spin-button,
+      input[type="date"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+    `;
+
+    const styleElement = document.createElement('style');
+    styleElement.textContent = globalStyles;
+    styleElement.id = 'schedule-app-styles';
+    document.head.appendChild(styleElement);
+
+    return () => {
+      const existingStyle = document.getElementById('schedule-app-styles');
+      if (existingStyle) {
+        document.head.removeChild(existingStyle);
+      }
+    };
+  }, []);
+
+  const updateCrewContact = useCallback((index, field, value) => {
+    setCrewContacts(prev => prev.map((contact, i) => 
+      i === index ? { ...contact, [field]: value } : contact
+    ));
+  }, []);
+
+  const updateLocation = useCallback((index, value) => {
+    setLocations(prev => prev.map((location, i) => 
+      i === index ? value : location
+    ));
+  }, []);
+
+  const updateCrew = useCallback((index, field, value) => {
+    setCrew(prev => prev.map((member, i) => 
+      i === index ? { ...member, [field]: value } : member
+    ));
+  }, []);
+
+  const updateTalent = useCallback((index, field, value) => {
+    setTalent(prev => prev.map((member, i) => 
+      i === index ? { ...member, [field]: value } : member
+    ));
+  }, []);
+
+  const moveRow = useCallback((from, to) => {
+    if (from === to) return;
+    setRows(prevRows => {
+      const newRows = [...prevRows];
+      const [movedRow] = newRows.splice(from, 1);
+      newRows.splice(to, 0, movedRow);
+      return newRows;
+    });
+  }, []);
+
+  const moveRowUp = useCallback((index) => {
+    if (index > 0) moveRow(index, index - 1);
+  }, [moveRow]);
+
+  const moveRowDown = useCallback((index) => {
+    if (index < rows.length - 1) moveRow(index, index + 1);
+  }, [moveRow, rows.length]);
+
+  const updateRow = useCallback((index, changes) => {
+    setRows(prevRows => 
+      prevRows.map((row, idx) => 
+        idx === index ? { ...row, ...changes } : row
+      )
+    );
+  }, []);
+
+  const updateRowColor = useCallback((index, googleSheetsColor, rgbColor) => {
+    setRows(prevRows => 
+      prevRows.map((row, idx) => 
+        idx === index ? { 
+          ...row, 
+          backgroundColor: rgbColor,
+          googleSheetsColor: googleSheetsColor
+        } : row
+      )
+    );
+  }, []);
+
+  const removeRow = useCallback((index) => {
+    const rowToRemove = rows[index];
+    setRows(prevRows => prevRows.filter((_, idx) => idx !== index));
+    
+    setSelectedRows(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(rowToRemove.id);
+      return newSet;
+    });
+  }, [rows]);
+
+  const handleRowSelect = useCallback((index, event) => {
+    const rowId = rows[index].id;
+    
+    setSelectedRows(prev => {
+      const newSet = new Set(prev);
+      
+      if (event.shiftKey && lastSelectedIndex !== null) {
+        const start = Math.min(lastSelectedIndex, index);
+        const end = Math.max(lastSelectedIndex, index);
+        for (let i = start; i <= end; i++) {
+          newSet.add(rows[i].id);
+        }
+      } else if (event.ctrlKey || event.metaKey) {
+        if (newSet.has(rowId)) {
+          newSet.delete(rowId);
+        } else {
+          newSet.add(rowId);
+        }
+      } else {
+        if (newSet.has(rowId)) {
+          newSet.delete(rowId);
+        } else {
+          newSet.add(rowId);
+        }
+      }
+      
+      setLastSelectedIndex(index);
+      return newSet;
+    });
+  }, [rows, lastSelectedIndex]);
+
+  const selectAll = useCallback(() => {
+    setSelectedRows(new Set(rows.map(row => row.id)));
+  }, [rows]);
+
+  const clearSelection = useCallback(() => {
+    setSelectedRows(new Set());
+    setLastSelectedIndex(null);
+  }, []);
+
+  const deleteSelected = useCallback(() => {
+    if (selectedRows.size === 0) return;
+    setRows(prevRows => prevRows.filter(row => !selectedRows.has(row.id)));
+    clearSelection();
+  }, [selectedRows, clearSelection]);
+
+  const moveSelectedUp = useCallback(() => {
+    if (selectedRows.size === 0) return;
+    
+    const selectedIndices = rows
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => selectedRows.has(row.id))
+      .map(({ index }) => index)
+      .sort((a, b) => a - b);
+    
+    if (selectedIndices[0] === 0) return;
+    
+    setRows(prevRows => {
+      const newRows = [...prevRows];
+      selectedIndices.forEach(index => {
+        if (index > 0) {
+          [newRows[index - 1], newRows[index]] = [newRows[index], newRows[index - 1]];
+        }
+      });
+      return newRows;
+    });
+  }, [selectedRows, rows]);
+
+  const moveSelectedDown = useCallback(() => {
+    if (selectedRows.size === 0) return;
+    
+    const selectedIndices = rows
+      .map((row, index) => ({ row, index }))
+      .filter(({ row }) => selectedRows.has(row.id))
+      .map(({ index }) => index)
+      .sort((a, b) => b - a);
+    
+    if (selectedIndices[0] === rows.length - 1) return;
+    
+    setRows(prevRows => {
+      const newRows = [...prevRows];
+      selectedIndices.forEach(index => {
+        if (index < newRows.length - 1) {
+          [newRows[index + 1], newRows[index]] = [newRows[index], newRows[index + 1]];
+        }
+      });
+      return newRows;
+    });
+  }, [selectedRows, rows]);
+
+  const addRow = useCallback(() => {
+    const lastRow = displayRows[displayRows.length - 1];
+    const newRow = { 
+      id: Date.now(), 
+      start: lastRow ? lastRow.end : userStartTime, 
+      item: "New Item", 
+      notes: "",
+      duration: 30 
+    };
+    setRows(prevRows => [...prevRows, newRow]);
+  }, [displayRows, userStartTime]);
+
+  const extractSpreadsheetId = useCallback((input) => {
+    if (!input || typeof input !== 'string') return '';
+    const match = input.trim().match(/\/d\/([a-zA-Z0-9-_]+)/);
+    return match ? match[1] : input.trim();
+  }, []);
+
+  const getFirstTabName = useCallback(async (spreadsheetId) => {
+    try {
+      const response = await window.gapi.client.sheets.spreadsheets.get({ 
+        spreadsheetId 
+      });
+      return response.result.sheets?.[0]?.properties?.title || "CallSheet";
+    } catch (error) {
+      console.error('Error getting tab name:', error);
+      throw new Error('Could not access spreadsheet. Please check permissions and URL.');
+    }
+  }, []);
+
+  // Debounced save function
+  const saveToGoogleSheet = useCallback(debounce(async () => {
+    if (!gapiLoaded) {
+      setError("Google API not loaded yet. Please wait and try again.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const authInstance = window.gapi.auth2.getAuthInstance();
+      if (!authInstance.isSignedIn.get()) {
+        await authInstance.signIn();
+      }
+
+      const id = extractSpreadsheetId(spreadsheetId);
+      if (!id) {
+        throw new Error("Please enter a valid Google Sheets URL or ID");
+      }
+
+      const tabName = await getFirstTabName(id);
+      
+      // Get sheet metadata to find the sheet ID
+      const sheetMetadata = await window.gapi.client.sheets.spreadsheets.get({ 
+        spreadsheetId: id 
+      });
+      const sheetId = sheetMetadata.result.sheets.find(s => s.properties.title === tabName)?.properties?.sheetId || 0;
+      
+      const rowCount = Math.max(displayRows.length, SCHEDULE_ROW_COUNT);
+      const startRow = SCHEDULE_START_ROW;
+      
+      const colB = [];
+      const colC = [];
+      const colH = []; // Notes column
+      const colP = [];
+      const colQ = [];
+
+      for (let i = 0; i < rowCount; i++) {
+        const row = displayRows[i];
+        const rowNum = startRow + i;
+        
+        if (row) {
+          if (i === 0) {
+            colB.push([row.start]);
+          } else {
+            colB.push([`=P${rowNum - 1}`]);
+          }
+          
+          colC.push([row.item]);
+          colH.push([row.notes || ""]);
+          colQ.push([minutesToSheetTime(row.duration)]);
+          colP.push([`=SUM(B${rowNum},Q${rowNum})`]);
+        } else {
+          colB.push([""]);
+          colC.push([""]);
+          colH.push([""]);
+          colQ.push([""]);
+          colP.push([""]);
+        }
+      }
+
+      const rangePrefix = `${tabName}!`;
+      const endRow = startRow + rowCount - 1;
+      const clearRanges = [
+        `B${startRow}:B${endRow}`, 
+        `C${startRow}:C${endRow}`,
+        `H${startRow}:H${endRow}`,
+        `P${startRow}:P${endRow}`, 
+        `Q${startRow}:Q${endRow}`
+      ].map(r => `${rangePrefix}${r}`);
+      
+      await window.gapi.client.sheets.spreadsheets.values.batchClear({
+        spreadsheetId: id,
+        ranges: clearRanges
+      });
+
+      const projectData = [
+        { range: `${rangePrefix}C1`, values: [[projectName]] },
+        { range: `${rangePrefix}H1`, values: [[clientInfo]] },
+        { range: `${rangePrefix}P1`, values: [[shootDate]] },
+        { range: `${rangePrefix}R1`, values: [[clientLogoUrl]] },
+        { range: `${rangePrefix}B3`, values: [[crewContacts[0].title]] },
+        { range: `${rangePrefix}C3`, values: [[crewContacts[0].name]] },
+        { range: `${rangePrefix}E3`, values: [[crewContacts[0].phone]] },
+        { range: `${rangePrefix}B4`, values: [[crewContacts[1].title]] },
+        { range: `${rangePrefix}C4`, values: [[crewContacts[1].name]] },
+        { range: `${rangePrefix}E4`, values: [[crewContacts[1].phone]] },
+        { range: `${rangePrefix}B5`, values: [[crewContacts[2].title]] },
+        { range: `${rangePrefix}C5`, values: [[crewContacts[2].name]] },
+        { range: `${rangePrefix}E5`, values: [[crewContacts[2].phone]] },
+        { range: `${rangePrefix}B8`, values: [[locations[0]]] },
+        { range: `${rangePrefix}B9`, values: [[locations[1]]] },
+        { range: `${rangePrefix}B10`, values: [[locations[2]]] },
+        { range: `${rangePrefix}N4`, values: [[sunrise]] },
+        { range: `${rangePrefix}O4`, values: [[sunset]] },
+        { range: `${rangePrefix}P4`, values: [[calculateTimeOnSet]] }
+      ];
+
+      // Add crew data
+      crew.forEach((member, index) => {
+        const rowNum = CREW_START_ROW + index;
+        projectData.push(
+          { range: `${rangePrefix}B${rowNum}`, values: [[member.position]] },
+          { range: `${rangePrefix}D${rowNum}`, values: [[member.name]] },
+          { range: `${rangePrefix}F${rowNum}`, values: [[member.phone]] },
+          { range: `${rangePrefix}H${rowNum}`, values: [[member.email]] }
+        );
+      });
+
+      // Add talent data
+      talent.forEach((member, index) => {
+        const rowNum = TALENT_START_ROW + index;
+        projectData.push(
+          { range: `${rangePrefix}B${rowNum}`, values: [[member.role]] },
+          { range: `${rangePrefix}D${rowNum}`, values: [[member.name]] },
+          { range: `${rangePrefix}F${rowNum}`, values: [[member.phone]] },
+          { range: `${rangePrefix}H${rowNum}`, values: [[member.email]] }
+        );
+      });
+
+      await window.gapi.client.sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId: id,
+        valueInputOption: "USER_ENTERED",
+        data: [
+          { range: `${rangePrefix}B${startRow}:B${endRow}`, values: colB },
+          { range: `${rangePrefix}C${startRow}:C${endRow}`, values: colC },
+          { range: `${rangePrefix}H${startRow}:H${endRow}`, values: colH },
+          { range: `${rangePrefix}P${startRow}:P${endRow}`, values: colP },
+          { range: `${rangePrefix}Q${startRow}:Q${endRow}`, values: colQ },
+          ...projectData
+        ]
+      });
+
+      // Apply background colors
+      const requests = [];
+      displayRows.forEach((row, index) => {
+        if (row.googleSheetsColor) {
+          requests.push({
+            repeatCell: {
+              range: {
+                sheetId: sheetId,
+                startRowIndex: startRow - 1 + index,
+                endRowIndex: startRow + index,
+                startColumnIndex: 2, // Column C (0-indexed)
+                endColumnIndex: 3
+              },
+              cell: {
+                userEnteredFormat: {
+                  backgroundColor: row.googleSheetsColor
+                }
+              },
+              fields: "userEnteredFormat.backgroundColor"
+            }
+          });
+        }
+      });
+
+      if (requests.length > 0) {
+        await window.gapi.client.sheets.spreadsheets.batchUpdate({
+          spreadsheetId: id,
+          resource: {
+            requests: requests
+          }
+        });
+      }
+
+      setError(null);
+      // Success feedback could be added here if desired
+    } catch (error) {
+      console.error("Save error:", error);
+      setError(error.message || "Failed to save to Google Sheets. Please check your permissions and try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, 1000), [gapiLoaded, extractSpreadsheetId, spreadsheetId, getFirstTabName, displayRows, projectName, clientInfo, shootDate, crewContacts, locations, sunrise, sunset, calculateTimeOnSet, crew, talent]);
+
+  const loadFromGoogleSheet = useCallback(async () => {
+    if (!gapiLoaded) {
+      setError("Google API not loaded yet. Please wait and try again.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const authInstance = window.gapi.auth2.getAuthInstance();
+      if (!authInstance.isSignedIn.get()) {
+        await authInstance.signIn();
+      }
+
+      const id = extractSpreadsheetId(spreadsheetId);
+      if (!id) {
+        throw new Error("Please enter a valid Google Sheets URL or ID");
+      }
+
+      const tabName = await getFirstTabName(id);
+      
+      const headerRanges = [
+        `${tabName}!C1`, `${tabName}!H1`, `${tabName}!P1`,
+        `${tabName}!B3`, `${tabName}!C3`, `${tabName}!E3`,
+        `${tabName}!B4`, `${tabName}!C4`, `${tabName}!E4`,
+        `${tabName}!B5`, `${tabName}!C5`, `${tabName}!E5`,
+        `${tabName}!B8`, `${tabName}!B9`, `${tabName}!B10`,
+        `${tabName}!N4`, `${tabName}!O4`, `${tabName}!R1`
+      ];
+
+      // Add crew ranges
+      const crewRanges = [];
+      for (let i = 0; i < 10; i++) {
+        const rowNum = CREW_START_ROW + i;
+        crewRanges.push(
+          `${tabName}!B${rowNum}`, `${tabName}!D${rowNum}`, 
+          `${tabName}!F${rowNum}`, `${tabName}!H${rowNum}`
+        );
+      }
+
+      // Add talent ranges
+      const talentRanges = [];
+      for (let i = 0; i < 10; i++) {
+        const rowNum = TALENT_START_ROW + i;
+        talentRanges.push(
+          `${tabName}!B${rowNum}`, `${tabName}!D${rowNum}`, 
+          `${tabName}!F${rowNum}`, `${tabName}!H${rowNum}`
+        );
+      }
+
+      const allRanges = [...headerRanges, ...crewRanges, ...talentRanges];
+
+      const headerResponse = await window.gapi.client.sheets.spreadsheets.values.batchGet({
+        spreadsheetId: id,
+        ranges: allRanges,
+        valueRenderOption: 'FORMATTED_VALUE'
+      });
+
+      const headerValues = headerResponse.result.valueRanges || [];
+      setProjectName(headerValues[0]?.values?.[0]?.[0] || "");
+      setClientInfo(headerValues[1]?.values?.[0]?.[0] || "");
+      
+      const loadedShootDate = headerValues[2]?.values?.[0]?.[0] || "";
+      const loadedClientLogoUrl = headerValues[17]?.values?.[0]?.[0] || "";
+      setClientLogoUrl(loadedClientLogoUrl);
+      if (loadedShootDate) {
+        try {
+          const date = new Date(loadedShootDate);
+          if (!isNaN(date.getTime())) {
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            setShootDate(`${year}-${month}-${day}`);
+          } else {
+            setShootDate("");
+          }
+        } catch (e) {
+          setShootDate("");
+        }
+      } else {
+        setShootDate("");
+      }
+      
+      // FIXED CREW CONTACTS LOADING - Using correct indices
+      const loadedCrewContacts = [
+        { title: headerValues[3]?.values?.[0]?.[0] || "", name: headerValues[4]?.values?.[0]?.[0] || "", phone: headerValues[5]?.values?.[0]?.[0] || "" },
+        { title: headerValues[6]?.values?.[0]?.[0] || "", name: headerValues[7]?.values?.[0]?.[0] || "", phone: headerValues[8]?.values?.[0]?.[0] || "" },
+        { title: headerValues[9]?.values?.[0]?.[0] || "", name: headerValues[10]?.values?.[0]?.[0] || "", phone: headerValues[11]?.values?.[0]?.[0] || "" }
+      ];
+      
+      setCrewContacts(loadedCrewContacts);
+      
+      const loadedLocations = [
+        headerValues[12]?.values?.[0]?.[0] || "",
+        headerValues[13]?.values?.[0]?.[0] || "",
+        headerValues[14]?.values?.[0]?.[0] || ""
+      ];
+      
+      setLocations(loadedLocations);
+      
+      // Convert sunrise/sunset to HH:MM format for time inputs
+      const convertToTimeFormat = (timeStr) => {
+        if (!timeStr) return "";
+        
+        const match = timeStr.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);
+        if (!match) return "";
+        
+        let hours = parseInt(match[1], 10);
+        const minutes = match[2];
+        const period = match[4];
+        
+        if (period) {
+          if (period.toUpperCase() === 'PM' && hours !== 12) {
+            hours += 12;
+          } else if (period.toUpperCase() === 'AM' && hours === 12) {
+            hours = 0;
+          }
+        }
+        
+        return `${hours.toString().padStart(2, '0')}:${minutes}`;
+      };
+      
+      setSunrise(convertToTimeFormat(headerValues[15]?.values?.[0]?.[0] || ""));
+      setSunset(convertToTimeFormat(headerValues[16]?.values?.[0]?.[0] || ""));
+      
+      // Load crew data with explicit range mapping
+      const loadedCrew = [];
+      for (let i = 0; i < 10; i++) {
+        const crewBaseIndex = 18 + (i * 4); // Start after 18 header values
+        const crewMember = {
+          position: headerValues[crewBaseIndex]?.values?.[0]?.[0] || "",
+          name: headerValues[crewBaseIndex + 1]?.values?.[0]?.[0] || "",
+          phone: headerValues[crewBaseIndex + 2]?.values?.[0]?.[0] || "",
+          email: headerValues[crewBaseIndex + 3]?.values?.[0]?.[0] || ""
+        };
+        loadedCrew.push(crewMember);
+      }
+      setCrew(loadedCrew);
+
+      // Load talent data with explicit range mapping  
+      const loadedTalent = [];
+      for (let i = 0; i < 10; i++) {
+        const talentBaseIndex = 58 + (i * 4); // 18 + 40 crew values
+        const talentMember = {
+          role: headerValues[talentBaseIndex]?.values?.[0]?.[0] || "",
+          name: headerValues[talentBaseIndex + 1]?.values?.[0]?.[0] || "",
+          phone: headerValues[talentBaseIndex + 2]?.values?.[0]?.[0] || "",
+          email: headerValues[talentBaseIndex + 3]?.values?.[0]?.[0] || ""
+        };
+        loadedTalent.push(talentMember);
+      }
+      setTalent(loadedTalent);
+      
+      const response = await window.gapi.client.sheets.spreadsheets.get({
+        spreadsheetId: id,
+        includeGridData: true,
+        ranges: [`${tabName}!A${SCHEDULE_START_ROW}:R${SCHEDULE_START_ROW + SCHEDULE_ROW_COUNT - 1}`]
+      });
+
+      const sheet = response.result.sheets.find(s => s.properties.title === tabName);
+      if (!sheet?.data?.[0]?.rowData) {
+        throw new Error("Could not find sheet data");
+      }
+
+      const rowData = sheet.data[0].rowData;
+      const newRows = [];
+
+      for (let i = 0; i < Math.min(rowData.length, SCHEDULE_ROW_COUNT); i++) {
+        const row = rowData[i];
+        if (!row?.values) continue;
+
+        const startCell = row.values[1];
+        const itemCell = row.values[2];
+        const notesCell = row.values[7]; // Column H (0-indexed)
+        const endCell = row.values[15];
+        const durationCell = row.values[16];
+
+        const start = startCell?.formattedValue || startCell?.userEnteredValue?.stringValue || "";
+        const item = itemCell?.formattedValue || itemCell?.userEnteredValue?.stringValue || "";
+        const notes = notesCell?.formattedValue || notesCell?.userEnteredValue?.stringValue || "";
+        const end = endCell?.formattedValue || endCell?.userEnteredValue?.stringValue || "";
+        const durationStr = durationCell?.formattedValue || durationCell?.userEnteredValue?.stringValue || "";
+        
+        let backgroundColor = null;
+        let googleSheetsColor = null;
+        if (itemCell?.effectiveFormat?.backgroundColor) {
+          const bgColor = itemCell.effectiveFormat.backgroundColor;
+          googleSheetsColor = bgColor;
+          if (bgColor.red !== undefined || bgColor.green !== undefined || bgColor.blue !== undefined) {
+            const r = Math.round((bgColor.red || 0) * 255);
+            const g = Math.round((bgColor.green || 0) * 255);
+            const b = Math.round((bgColor.blue || 0) * 255);
+            backgroundColor = `rgb(${r}, ${g}, ${b})`;
+          }
+        }
+
+        const duration = sheetTimeToMinutes(durationStr);
+
+        if (item || start || end || duration > 0 || notes) {
+          newRows.push({
+            id: Date.now() + i,
+            start,
+            item,
+            notes,
+            end,
+            duration,
+            backgroundColor,
+            googleSheetsColor
+          });
+        }
+      }
+
+      if (newRows.length > 0) {
+        setRows(newRows);
+        setUserStartTime(newRows[0].start || "9:00 AM");
+        clearSelection();
+      } else {
+        setError("No schedule data found in the sheet.");
+      }
+      
+      setError(null);
+    } catch (error) {
+      console.error("Load error:", error);
+      setError(error.message || "Failed to load from Google Sheets. Please check your permissions and try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [gapiLoaded, extractSpreadsheetId, spreadsheetId, getFirstTabName, clearSelection]);
+
+  const printPreview = useCallback(() => {
+    // Filter out empty rows but keep the original row data with colors
+    const filledRowsWithColors = displayRows.filter(row => 
+      row.item?.trim() || row.notes?.trim() || (row.duration && row.duration > 0)
+    );
+
+    // Filter out empty crew members
+    const filledCrew = crew.filter(member => 
+      member.position?.trim() || member.name?.trim() || member.phone?.trim() || member.email?.trim()
+    );
+
+    // Filter out empty talent
+    const filledTalent = talent.filter(member => 
+      member.role?.trim() || member.name?.trim() || member.phone?.trim() || member.email?.trim()
+    );
+
+    // Filter out empty locations
+    const filledLocations = locations.filter(location => location?.trim());
+
+    // Filter out empty crew contacts
+    const filledCrewContacts = crewContacts.filter(contact => 
+      contact.title?.trim() || contact.name?.trim() || contact.phone?.trim()
+    );
+
+    // Debug log
+    console.log('Client Logo URL:', clientLogoUrl);
+
+    // Create print window
+    const printWindow = window.open('', '_blank');
+    
+    const printHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Production Call Sheet - ${projectName || 'Untitled Project'}</title>
+        <style>
+          @page {
+            margin: 0.3in;
+            size: letter;
+          }
+          
+          * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+          }
+          
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 9px;
+            line-height: 1.3;
+            color: #1a1a1a;
+            background: white;
+            padding: 8px;
+          }
+          
+          .header {
+            text-align: center;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #000;
+            padding: 12px;
+          }
+          
+          .project-title {
+            font-size: 20px;
+            font-weight: 800;
+            margin: 6px 0;
+            color: #000;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          
+          .client-info {
+            font-size: 10px;
+            margin: 3px 0;
+            color: #475569;
+            font-weight: 500;
+          }
+          
+          .shoot-date {
+            background: white;
+            color: #2563eb;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 12px;
+            display: inline-block;
+            margin: 4px 0;
+            border: 2px solid #2563eb;
+          }
+          
+          .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+          }
+          
+          .left-column, .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          }
+          
+          .section {
+            border: 1px solid #000;
+            margin-bottom: 10px;
+          }
+          
+          .section-header {
+            color: #000;
+            padding: 6px 10px;
+            font-weight: 700;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #000;
+          }
+          
+          .section-content {
+            padding: 8px 10px;
+          }
+          
+          .info-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 3px 10px;
+            align-items: center;
+          }
+          
+          .info-label {
+            font-weight: 700;
+            font-size: 8px;
+            color: #374151;
+            text-transform: uppercase;
+          }
+          
+          .info-value {
+            font-size: 9px;
+            color: #1f2937;
+            font-weight: 500;
+          }
+          
+          .schedule-section {
+            grid-column: 1 / -1;
+            margin-top: 8px;
+          }
+          
+          .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 8px;
+            border: 1px solid #000;
+          }
+          
+          .schedule-table th {
+            color: #1e293b;
+            border: 1px solid #cbd5e1;
+            padding: 6px 5px;
+            font-weight: 700;
+            text-align: left;
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+          }
+          
+          .schedule-table td {
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #f1f5f9;
+            padding: 5px;
+            vertical-align: top;
+          }
+          
+          .schedule-table tr:nth-child(even) td {
+          }
+          
+          .time-col { 
+            width: 55px; 
+            font-weight: 700;
+            color: #000000;
+            text-align: center;
+          }
+          .item-col { 
+            width: 200px; 
+            font-weight: 600;
+            color: #000000;
+          }
+          .notes-col { 
+            width: auto; 
+            font-size: 7px;
+            color: #000000;
+            font-style: italic;
+          }
+          .duration-col { 
+            width: 85px; 
+            text-align: center;
+            font-weight: 600;
+            color: #000000;
+            padding-left: 15px;
+            padding-right: 10px;
+          }
+          
+          .contacts-grid {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 2px 8px;
+            font-size: 8px;
+          }
+          
+          .crew-talent-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 3px 8px;
+            font-size: 8px;
+          }
+          
+          .locations-list {
+            font-size: 8px;
+            line-height: 1.4;
+          }
+          
+          .locations-list div {
+            margin-bottom: 4px;
+            padding: 3px 6px;
+            background: white;
+            border-radius: 3px;
+            border-left: 3px solid #2563eb;
+          }
+          
+          .timing-info .info-value {
+            font-weight: 700;
+            color: #000000;
+          }
+          
+          .call-time {
+            background: white;
+            color: #2563eb;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 12px;
+            display: inline-block;
+            margin: 4px 0;
+            border: 2px solid #2563eb;
+            text-shadow: none;
+          }
+          
+          @media print {
+            body { 
+              print-color-adjust: exact; 
+              -webkit-print-color-adjust: exact;
+              background: white !important;
+            }
+            .no-print { display: none; }
+            .section-content {
+              background: white !important;
+            }
+            .section-header {
+              background: white !important;
+            }
+            .section {
+              background: white !important;
+            }
+            .header {
+              background: white !important;
+            }
+            .main-content {
+              background: white !important;
+            }
+            .left-column, .right-column {
+              background: white !important;
+            }
+            .schedule-table tr:nth-child(even) td {
+              background: white !important;
+            }
+            .schedule-table th {
+              background: white !important;
+            }
+            .schedule-table {
+              background: white !important;
+            }
+            .schedule-section {
+              background: white !important;
+            }
+            * {
+              background: white !important;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div style="margin: 4px auto 8px; width: 180px; display: flex; align-items: center; justify-content: center;">
+            <img src="https://workbyremedy.com/wp-content/uploads/2022/11/remedy_LOGO_web-01.png" 
+                 style="max-height: 45px; max-width: 175px; object-fit: contain;" 
+                 alt="Remedy Production Company Logo" 
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+            <div style="display: none; color: #64748b; font-size: 8px; font-weight: 600;">
+              REMEDY LOGO
+            </div>
+          </div>
+          <div class="project-title">${projectName || 'PRODUCTION CALL SHEET'}</div>
+          ${clientLogoUrl ? `
+          <div style="margin: 8px auto 12px; width: 200px; display: flex; align-items: center; justify-content: center; min-height: 40px;">
+            <img src="${clientLogoUrl}" 
+                 style="max-height: 40px; max-width: 190px; object-fit: contain;" 
+                 alt="Client Logo" />
+          </div>` : ''}
+          <div class="client-info">${clientInfo || ''}</div>
+          <div class="shoot-date" style="background: white; color: #000000; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 12px; display: inline-block; margin: 4px 0; border: 1px solid #cbd5e1;">SHOOT DATE: ${shootDate ? new Date(shootDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'TBD'}</div>
+          ${filledRowsWithColors.length > 0 ? `<div class="call-time" style="background: white; color: #000000; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 12px; display: inline-block; margin: 4px 0; border: 1px solid #cbd5e1;">CALL TIME: ${filledRowsWithColors[0].start}</div>` : ''}
+        </div>
+
+        <div class="main-content">
+          <div class="left-column">
+            ${filledCrewContacts.length > 0 ? `
+            <div class="section">
+              <div class="section-header">📞 KEY CONTACTS</div>
+              <div class="section-content">
+                <div class="contacts-grid">
+                  ${filledCrewContacts.map(contact => `
+                    <div style="font-weight: 700; color: #000000; text-transform: uppercase; font-size: 7px;">${contact.title}:</div>
+                    <div style="font-weight: 600; color: #000000;">${contact.name}</div>
+                    <div style="font-weight: 500; color: #000000; font-size: 7px;">${contact.phone}</div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>` : ''}
+            
+            ${filledLocations.length > 0 ? `
+            <div class="section">
+              <div class="section-header">📍 LOCATIONS</div>
+              <div class="section-content">
+                <div class="locations-list">
+                  ${filledLocations.map((location, idx) => `
+                    <div><strong>📌 Location ${idx + 1}:</strong> ${location}</div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>` : ''}
+            
+            <div class="section timing-info">
+              <div class="section-header">⏰ TIMING INFO</div>
+              <div class="section-content">
+                <div class="info-grid">
+                  ${sunrise ? `<div class="info-label">🌅 Sunrise:</div><div class="info-value">${(() => {
+                    const [hours, minutes] = sunrise.split(':');
+                    const hour24 = parseInt(hours, 10);
+                    const period = hour24 >= 12 ? 'PM' : 'AM';
+                    const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+                    return `${hour12}:${minutes} ${period}`;
+                  })()}</div>` : ''}
+                  ${sunset ? `<div class="info-label">🌇 Sunset:</div><div class="info-value">${(() => {
+                    const [hours, minutes] = sunset.split(':');
+                    const hour24 = parseInt(hours, 10);
+                    const period = hour24 >= 12 ? 'PM' : 'AM';
+                    const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+                    return `${hour12}:${minutes} ${period}`;
+                  })()}</div>` : ''}
+                  ${filledRowsWithColors.length > 0 ? `<div class="info-label">📞 Call Time:</div><div class="info-value">${filledRowsWithColors[0].start}</div>` : ''}
+                  <div class="info-label">⏱️ Time on Set:</div><div class="info-value">${calculateTimeOnSet}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="right-column">
+            ${filledCrew.length > 0 ? `
+            <div class="section">
+              <div class="section-header">👥 CREW</div>
+              <div class="section-content">
+                <div class="crew-talent-grid">
+                  ${filledCrew.map(member => `
+                    <div style="font-weight: 700; color: #000000; text-transform: uppercase; font-size: 7px;">${member.position}:</div>
+                    <div style="font-weight: 600; color: #000000;">${member.name} <span style="font-weight: 500; font-size: 7px;">${member.phone}</span></div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>` : ''}
+            
+            ${filledTalent.length > 0 ? `
+            <div class="section">
+              <div class="section-header">🎭 TALENT</div>
+              <div class="section-content">
+                <div class="crew-talent-grid">
+                  ${filledTalent.map(member => `
+                    <div style="font-weight: 700; color: #000000; text-transform: uppercase; font-size: 7px;">${member.role}:</div>
+                    <div style="font-weight: 600; color: #000000;">${member.name} <span style="font-weight: 500; font-size: 7px;">${member.phone}</span></div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>` : ''}
+          </div>
+        </div>
+
+        ${filledRowsWithColors.length > 0 ? `
+        <div class="section schedule-section">
+          <div class="section-header">📋 PRODUCTION SCHEDULE</div>
+          <table class="schedule-table">
+            <thead>
+              <tr>
+                <th class="time-col">🕐 START</th>
+                <th class="item-col">📝 ACTIVITY</th>
+                <th class="notes-col">💬 NOTES</th>
+                <th class="time-col">🕐 END</th>
+                <th class="duration-col">⏲️ DURATION</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filledRowsWithColors.map((row, index) => {
+                const backgroundColor = row.backgroundColor || '';
+                const styleAttr = backgroundColor ? `style="background-color: ${backgroundColor} !important; color: #000 !important;"` : '';
+                
+                return `
+                <tr ${styleAttr}>
+                  <td class="time-col" ${styleAttr}>${row.start || ''}</td>
+                  <td class="item-col" ${styleAttr}>${row.item || ''}</td>
+                  <td class="notes-col" ${styleAttr}>${row.notes || ''}</td>
+                  <td class="time-col" ${styleAttr}>${row.end || ''}</td>
+                  <td class="duration-col" ${styleAttr}>${row.duration ? row.duration + 'm' : ''}</td>
+                </tr>
+              `;}).join('')}
+            </tbody>
+          </table>
+        </div>` : ''}
+
+        <div class="no-print" style="margin-top: 20px; text-align: center;">
+          <button onclick="window.print()" style="padding: 12px 24px; font-size: 16px; background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); color: white; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-weight: 600;">🖨️ Print Call Sheet</button>
+          <button onclick="window.close()" style="padding: 12px 24px; font-size: 16px; background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%); color: white; border: none; border-radius: 8px; cursor: pointer; margin-left: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-weight: 600;">❌ Close Preview</button>
+        </div>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(printHTML);
+    printWindow.document.close();
+  }, [displayRows, crew, talent, locations, crewContacts, projectName, clientInfo, shootDate, sunrise, sunset, calculateTimeOnSet, clientLogoUrl]);
+
+  return (
+    <div style={{ 
+      maxWidth: "1200px", 
+      margin: "0 auto", 
+      padding: "2rem", 
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", 
+      color: "#1f2937" 
+    }}>
+      <h1 style={{ 
+        fontSize: "2.5rem", 
+        fontWeight: "700", 
+        marginBottom: "1.5rem", 
+        textAlign: "center",
+        color: "#111827"
+      }}>
+        Production Schedule Builder
+      </h1>
+      
+      {/* Error Display */}
+      {error && (
+        <div style={{ 
+          backgroundColor: "#fef2f2", 
+          color: "#dc2626", 
+          padding: "12px 16px", 
+          borderRadius: "8px", 
+          marginBottom: "1.5rem",
+          border: "1px solid #fecaca"
+        }}>
+          {error}
+        </div>
+      )}
+      
+      {/* Google Sheets Controls */}
+      <div style={{ 
+        display: "flex", 
+        gap: "0.75rem", 
+        marginBottom: "1.5rem", 
+        flexWrap: "wrap", 
+        justifyContent: "center",
+        alignItems: "center"
+      }}>
+        <input
+          type="text"
+          style={{ 
+            width: "400px", 
+            padding: "12px 16px",
+            border: "1px solid #d1d5db",
+            borderRadius: "8px",
+            fontSize: "14px",
+            backgroundColor: "white",
+            boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)"
+          }}
+          placeholder="Paste Google Sheets URL here..."
+          value={spreadsheetId}
+          onChange={(e) => setSpreadsheetId(e.target.value)}
+          aria-label="Google Sheets URL"
+        />
+        <button 
+          style={{ ...buttonStyle, backgroundColor: "#10b981", color: "white" }} 
+          onClick={saveToGoogleSheet}
+          disabled={isLoading}
+          aria-label="Save to Google Sheet"
+        >
+          {isLoading ? "Saving..." : "Save to Sheet"}
+        </button>
+        <button 
+          style={{ ...buttonStyle, backgroundColor: "#f59e0b", color: "white" }} 
+          onClick={loadFromGoogleSheet}
+          disabled={isLoading}
+          aria-label="Load from Google Sheet"
+        >
+          {isLoading ? "Loading..." : "Load from Sheet"}
+        </button>
+        <button 
+          style={{ ...buttonStyle, backgroundColor: "#8b5cf6", color: "white" }} 
+          onClick={printPreview}
+          aria-label="Print Preview"
+        >
+          Print Preview
+        </button>
+      </div>
+      
+      <div style={{ 
+        backgroundColor: "#f0f9ff", 
+        padding: "12px 16px", 
+        borderRadius: "8px", 
+        marginBottom: "1.5rem",
+        fontSize: "14px",
+        color: "#0369a1",
+        border: "1px solid #0ea5e9"
+      }}>
+        <div style={{ fontWeight: "600", marginBottom: "4px" }}>Setup Instructions:</div>
+        <div style={{ marginBottom: "2px" }}>• Open the template <a href="https://docs.google.com/spreadsheets/d/1cRd-x0g8LHAvYZH1RMxfN3YfjMS6jttQZzCTcfFKNIE/edit?gid=819673069#gid=819673069" target="_blank" rel="noopener noreferrer" style={{ color: "#0369a1", fontWeight: "600", textDecoration: "underline" }}>HERE</a> and duplicate to create your own project.</div>
+        <div style={{ marginBottom: "2px" }}>• Set sheet permissions to <strong>"Anyone with the link can edit"</strong></div>
+        <div style={{ marginBottom: "2px" }}>• Enter url of sheet above and click "Load from Sheet". (If editing from a Sheet with multiple tabs, move the tab you want to edit to the <strong>first position</strong> in your Google Sheet.)</div>
+        <div>• Once filled out, click "Save to Sheet"</div>
+      </div>
+
+      <div style={{
+        backgroundColor: "#f9fafb",
+        border: "1px solid #e5e7eb",
+        borderRadius: "8px",
+        padding: "20px",
+        marginBottom: "2rem"
+      }}>
+        <h2 style={{ 
+          fontSize: "1.25rem", 
+          fontWeight: "600", 
+          marginBottom: "1rem", 
+          color: "#374151" 
+        }}>
+          Project Information
+        </h2>
+        
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "300px 180px", 
+          gap: "4rem",
+          marginBottom: "1.5rem"
+        }}>
+          <div>
+            <label style={{ 
+              display: "block", 
+              fontSize: "14px", 
+              fontWeight: "500", 
+              color: "#374151", 
+              marginBottom: "4px" 
+            }}>
+              Project Name
+            </label>
+            <input
+              type="text"
+              style={{ 
+                width: "100%", 
+                padding: "12px 16px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+                marginBottom: "8px"
+              }}
+              placeholder="Enter project name..."
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+            />
+          </div>
+          
+          <div>
+            <label style={{ 
+              display: "block", 
+              fontSize: "14px", 
+              fontWeight: "500", 
+              color: "#374151", 
+              marginBottom: "4px" 
+            }}>
+              Shoot Date
+            </label>
+            <input
+              type="date"
+              style={{ 
+                width: "100%", 
+                padding: "12px 16px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+                marginBottom: "8px"
+              }}
+              value={shootDate}
+              onChange={(e) => setShootDate(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div style={{ marginBottom: "1.5rem" }}>
+          <h3 style={{ 
+            fontSize: "1rem", 
+            fontWeight: "600", 
+            marginBottom: "1rem", 
+            color: "#374151" 
+          }}>
+            Locations
+          </h3>
+          
+          {locations.map((location, index) => (
+            <div key={index} style={{ marginBottom: "0.75rem" }}>
+              <input
+                type="text"
+                style={{ 
+                  width: "100%",
+                  maxWidth: "500px",
+                  padding: "12px 16px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  backgroundColor: "white",
+                  marginBottom: "4px"
+                }}
+                placeholder={`Location ${index + 1} (e.g., 123 Main St, City, State, Zip Code)`}
+                value={location}
+                onChange={(e) => updateLocation(index, e.target.value)}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div style={{ marginBottom: "1.5rem" }}>
+          <label style={{ 
+            display: "block", 
+            fontSize: "14px", 
+            fontWeight: "500", 
+            color: "#374151", 
+            marginBottom: "4px" 
+          }}>
+            Client | Agency | Production Company
+          </label>
+          <input
+            type="text"
+            style={{ 
+              width: "100%", 
+              maxWidth: "350px",
+              padding: "12px 16px",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              fontSize: "14px",
+              backgroundColor: "white",
+              marginBottom: "8px"
+            }}
+            placeholder="Client Name | Agency Name | Production Company..."
+            value={clientInfo}
+            onChange={(e) => setClientInfo(e.target.value)}
+          />
+        </div>
+
+        <div style={{ marginBottom: "1.5rem" }}>
+          <label style={{ 
+            display: "block", 
+            fontSize: "14px", 
+            fontWeight: "500", 
+            color: "#374151", 
+            marginBottom: "4px" 
+          }}>
+            Client Logo URL
+          </label>
+          <input
+            type="url"
+            style={{ 
+              width: "100%", 
+              maxWidth: "500px",
+              padding: "12px 16px",
+              border: "1px solid #d1d5db",
+              borderRadius: "6px",
+              fontSize: "14px",
+              backgroundColor: "white",
+              marginBottom: "8px"
+            }}
+            placeholder="https://example.com/client-logo.png"
+            value={clientLogoUrl}
+            onChange={(e) => setClientLogoUrl(e.target.value)}
+          />
+        </div>
+
+        <div style={{ marginBottom: "1.5rem" }}>
+          <h3 style={{ 
+            fontSize: "1rem", 
+            fontWeight: "600", 
+            marginBottom: "1rem", 
+            color: "#374151" 
+          }}>
+            Key Crew Contacts
+          </h3>
+          
+          {crewContacts.map((contact, index) => (
+            <div key={index} style={{ 
+              display: "grid", 
+              gridTemplateColumns: "160px 200px 140px", 
+              gap: "0.75rem",
+              marginBottom: "0.75rem"
+            }}>
+              <input
+                type="text"
+                style={{ 
+                  padding: "12px 16px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  backgroundColor: "white",
+                  marginBottom: "4px"
+                }}
+                placeholder="Title (e.g., Producer)"
+                value={contact.title}
+                onChange={(e) => updateCrewContact(index, 'title', e.target.value)}
+              />
+              <input
+                type="text"
+                style={{ 
+                  padding: "12px 16px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  backgroundColor: "white",
+                  marginBottom: "4px"
+                }}
+                placeholder="Name"
+                value={contact.name}
+                onChange={(e) => updateCrewContact(index, 'name', e.target.value)}
+              />
+              <input
+                type="tel"
+                style={{ 
+                  padding: "12px 16px",
+                  border: "1px solid #d1d5db",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  backgroundColor: "white",
+                  marginBottom: "4px"
+                }}
+                placeholder="Phone"
+                value={contact.phone}
+                onChange={(e) => updateCrewContact(index, 'phone', e.target.value)}
+              />
+            </div>
+          ))}
+        </div>
+
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "110px 110px 110px", 
+          gap: "4rem"
+        }}>
+          <div>
+            <label style={{ 
+              fontSize: "14px", 
+              fontWeight: "600", 
+              color: "#374151", 
+              marginBottom: "4px",
+              display: "block"
+            }}>
+              SUNRISE
+            </label>
+            <input
+              type="time"
+              style={{ 
+                width: "100%", 
+                padding: "12px 16px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+                marginBottom: "4px"
+              }}
+              value={sunrise}
+              onChange={(e) => setSunrise(e.target.value)}
+            />
+          </div>
+          
+          <div>
+            <label style={{ 
+              fontSize: "14px", 
+              fontWeight: "600", 
+              color: "#374151", 
+              marginBottom: "4px",
+              display: "block"
+            }}>
+              SUNSET
+            </label>
+            <input
+              type="time"
+              style={{ 
+                width: "100%", 
+                padding: "12px 16px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+                marginBottom: "4px"
+              }}
+              value={sunset}
+              onChange={(e) => setSunset(e.target.value)}
+            />
+          </div>
+          
+          <div>
+            <label style={{ 
+              fontSize: "14px", 
+              fontWeight: "600", 
+              color: "#374151", 
+              marginBottom: "4px",
+              display: "block"
+            }}>
+              TIME ON SET
+            </label>
+            <div style={{ 
+              padding: "10px 12px",
+              border: "1px solid #e5e7eb",
+              borderRadius: "4px",
+              fontSize: "14px",
+              backgroundColor: "#f9fafb",
+              color: "#6b7280"
+            }}>
+              {calculateTimeOnSet}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Crew Section */}
+      <div style={{
+        backgroundColor: "#f9fafb",
+        border: "1px solid #e5e7eb",
+        borderRadius: "8px",
+        padding: "20px",
+        marginBottom: "2rem"
+      }}>
+        <h2 style={{ 
+          fontSize: "1.25rem", 
+          fontWeight: "600", 
+          marginBottom: "1rem", 
+          color: "#374151" 
+        }}>
+          Crew
+        </h2>
+        
+        {crew.map((member, index) => (
+          <div key={index} style={{ 
+            display: "grid", 
+            gridTemplateColumns: "200px 180px 140px 200px", 
+            gap: "0.75rem",
+            marginBottom: "0.75rem"
+          }}>
+            <input
+              type="text"
+              style={{ 
+                padding: "10px 12px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+                marginBottom: "4px"
+              }}
+              placeholder="Position"
+              value={member.position}
+              onChange={(e) => updateCrew(index, 'position', e.target.value)}
+            />
+            <input
+              type="text"
+              style={{ 
+                padding: "10px 12px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+                marginBottom: "4px"
+              }}
+              placeholder="Name"
+              value={member.name}
+              onChange={(e) => updateCrew(index, 'name', e.target.value)}
+            />
+            <input
+              type="tel"
+              style={{ 
+                padding: "10px 12px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+                marginBottom: "4px"
+              }}
+              placeholder="Phone"
+              value={member.phone}
+              onChange={(e) => updateCrew(index, 'phone', e.target.value)}
+            />
+            <input
+              type="email"
+              style={{ 
+                padding: "10px 12px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+                marginBottom: "4px"
+              }}
+              placeholder="Email"
+              value={member.email}
+              onChange={(e) => updateCrew(index, 'email', e.target.value)}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* Talent Section */}
+      <div style={{
+        backgroundColor: "#f9fafb",
+        border: "1px solid #e5e7eb",
+        borderRadius: "8px",
+        padding: "20px",
+        marginBottom: "2rem"
+      }}>
+        <h2 style={{ 
+          fontSize: "1.25rem", 
+          fontWeight: "600", 
+          marginBottom: "1rem", 
+          color: "#374151" 
+        }}>
+          Talent
+        </h2>
+        
+        {talent.map((member, index) => (
+          <div key={index} style={{ 
+            display: "grid", 
+            gridTemplateColumns: "200px 180px 140px 200px", 
+            gap: "0.75rem",
+            marginBottom: "0.75rem"
+          }}>
+            <input
+              type="text"
+              style={{ 
+                padding: "10px 12px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+                marginBottom: "4px"
+              }}
+              placeholder="Role"
+              value={member.role}
+              onChange={(e) => updateTalent(index, 'role', e.target.value)}
+            />
+            <input
+              type="text"
+              style={{ 
+                padding: "10px 12px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+                marginBottom: "4px"
+              }}
+              placeholder="Name"
+              value={member.name}
+              onChange={(e) => updateTalent(index, 'name', e.target.value)}
+            />
+            <input
+              type="tel"
+              style={{ 
+                padding: "10px 12px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+                marginBottom: "4px"
+              }}
+              placeholder="Phone"
+              value={member.phone}
+              onChange={(e) => updateTalent(index, 'phone', e.target.value)}
+            />
+            <input
+              type="email"
+              style={{ 
+                padding: "10px 12px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                fontSize: "14px",
+                backgroundColor: "white",
+                marginBottom: "4px"
+              }}
+              placeholder="Email"
+              value={member.email}
+              onChange={(e) => updateTalent(index, 'email', e.target.value)}
+            />
+          </div>
+        ))}
+      </div>
+      
+      {/* Schedule Controls */}
+      <div style={{
+        display: "flex",
+        gap: "8px",
+        marginBottom: "1rem",
+        fontSize: "13px",
+        color: "#6b7280",
+        alignItems: "center"
+      }}>
+        <button
+          style={{ ...groupActionButtonStyle, backgroundColor: "#f3f4f6", color: "#374151" }}
+          onClick={selectAll}
+        >
+          Select All
+        </button>
+        <button 
+          style={{ ...groupActionButtonStyle, backgroundColor: "#3b82f6", color: "white" }} 
+          onClick={addRow}
+        >
+          + Add Item
+        </button>
+      </div>
+
+      {/* Group Actions Bar - Fixed position when rows are selected */}
+      {selectedRows.size > 0 && (
+        <div style={{
+          position: "fixed",
+          bottom: "20px",
+          left: "50%",
+          transform: "translateX(-50%)",
+          backgroundColor: "#f0f9ff",
+          border: "1px solid #0ea5e9",
+          borderRadius: "8px",
+          padding: "12px 16px",
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          flexWrap: "wrap",
+          boxShadow: "0 10px 25px rgba(0, 0, 0, 0.15)",
+          zIndex: 1000,
+          maxWidth: "90vw"
+        }}>
+          <span style={{ fontSize: "14px", fontWeight: "500", color: "#0369a1" }}>
+            {selectedRows.size} row{selectedRows.size !== 1 ? 's' : ''} selected
+          </span>
+          <div style={{ display: "flex", gap: "6px" }}>
+            <button
+              style={{ ...groupActionButtonStyle, backgroundColor: "#0ea5e9", color: "white" }}
+              onClick={moveSelectedUp}
+              disabled={selectedRows.size === 0}
+            >
+              ↑ Move Up
+            </button>
+            <button
+              style={{ ...groupActionButtonStyle, backgroundColor: "#0ea5e9", color: "white" }}
+              onClick={moveSelectedDown}
+              disabled={selectedRows.size === 0}
+            >
+              ↓ Move Down
+            </button>
+            <button
+              style={{ ...groupActionButtonStyle, backgroundColor: "#dc2626", color: "white" }}
+              onClick={deleteSelected}
+              disabled={selectedRows.size === 0}
+            >
+              🗑 Delete
+            </button>
+            <button
+              style={{ ...groupActionButtonStyle, backgroundColor: "#6b7280", color: "white" }}
+              onClick={clearSelection}
+            >
+              Clear Selection
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ overflowX: "auto", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", borderRadius: "12px", border: "1px solid #e5e7eb", paddingBottom: "200px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", backgroundColor: "white" }}>
+          <thead>
+            <tr style={{ backgroundColor: "#f8fafc", borderBottom: "2px solid #e5e7eb" }}>
+              <th style={{ 
+                ...cellStyle, 
+                fontWeight: "600", 
+                color: "#374151", 
+                fontSize: "15px",
+                padding: "20px 12px",
+                textAlign: "left",
+                borderBottom: "2px solid #e5e7eb",
+                width: "50px"
+              }}>
+                <input
+                  type="checkbox"
+                  checked={selectedRows.size === rows.length && rows.length > 0}
+                  onChange={selectedRows.size === rows.length ? clearSelection : selectAll}
+                  style={checkboxStyle}
+                  aria-label="Select all rows"
+                />
+              </th>
+              <th style={{ 
+                ...cellStyle, 
+                fontWeight: "600", 
+                color: "#374151", 
+                fontSize: "15px",
+                padding: "20px 12px",
+                textAlign: "left",
+                borderBottom: "2px solid #e5e7eb",
+                width: "70px"
+              }}>Start Time</th>
+              <th style={{ 
+                ...cellStyle, 
+                fontWeight: "600", 
+                color: "#374151", 
+                fontSize: "15px",
+                padding: "20px 12px",
+                textAlign: "left",
+                borderBottom: "2px solid #e5e7eb"
+              }}>Schedule Item</th>
+              <th style={{ 
+                ...cellStyle, 
+                fontWeight: "600", 
+                color: "#374151", 
+                fontSize: "15px",
+                padding: "20px 12px",
+                textAlign: "left",
+                borderBottom: "2px solid #e5e7eb"
+              }}>Notes</th>
+              <th style={{ 
+                ...cellStyle, 
+                fontWeight: "600", 
+                color: "#374151", 
+                fontSize: "15px",
+                padding: "20px 12px",
+                textAlign: "left",
+                borderBottom: "2px solid #e5e7eb",
+                width: "110px"
+              }}>End Time</th>
+              <th style={{ 
+                ...cellStyle, 
+                fontWeight: "600", 
+                color: "#374151", 
+                fontSize: "15px",
+                padding: "20px 12px",
+                textAlign: "left",
+                borderBottom: "2px solid #e5e7eb"
+              }}>Duration</th>
+              <th style={{ 
+                ...cellStyle, 
+                fontWeight: "600", 
+                color: "#374151", 
+                fontSize: "15px",
+                padding: "20px 12px",
+                textAlign: "left",
+                borderBottom: "2px solid #e5e7eb",
+                width: "120px"
+              }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {displayRows.map((row, index) => (
+              <ScheduleRow
+                key={row.id}
+                row={row}
+                index={index}
+                onUpdate={updateRow}
+                onUpdateColor={updateRowColor}
+                onRemove={removeRow}
+                onMoveUp={moveRowUp}
+                onMoveDown={moveRowDown}
+                isFirst={index === 0}
+                userStartTime={userStartTime}
+                setUserStartTime={setUserStartTime}
+                canMoveUp={index > 0}
+                canMoveDown={index < rows.length - 1}
+                isSelected={selectedRows.has(row.id)}
+                onSelect={handleRowSelect}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {!gapiLoaded && !error && (
+        <div style={{ 
+          textAlign: "center", 
+          marginTop: "1rem", 
+          color: "#6b7280", 
+          fontSize: "14px" 
+        }}>
+          Loading Google Sheets integration...
+        </div>
+      )}
+    </div>
+  );
+}     
+   // Copy EVERYTHING from "const { useState, useEffect..." to the very end
+        // But change the last line from "export default function ScheduleApp()" to just "function ScheduleApp()"
+        
+        ReactDOM.render(React.createElement(ScheduleApp), document.getElementById('root'));
+    </script>
 </body>
 </html>
