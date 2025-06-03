@@ -673,26 +673,44 @@ function ScheduleApp() {
     }
   }, [displayRows]);
 
-  // Load Google API with error handling
-  useEffect(() => {
-    const initializeGoogleAPI = async () => {
-      try {
-        await loadGoogleAPI();
-        await window.gapi.client.init({
-          clientId: CLIENT_ID,
-          scope: SCOPES
-        });
-        await window.gapi.client.load("sheets", "v4");
-        setGapiLoaded(true);
-        setError(null);
-      } catch (error) {
-        console.error('Failed to initialize Google API:', error);
-        setError('Failed to load Google Sheets integration. Please refresh and try again.');
+// Load Google API with error handling
+useEffect(() => {
+  const initializeGoogleAPI = async () => {
+    try {
+      // Wait for gapi to be available
+      let attempts = 0;
+      while (!window.gapi && attempts < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
       }
-    };
+      
+      if (!window.gapi) {
+        throw new Error('Google API failed to load');
+      }
 
-    initializeGoogleAPI();
-  }, []);
+      await new Promise((resolve, reject) => {
+        window.gapi.load('client:auth2', {
+          callback: resolve,
+          onerror: reject
+        });
+      });
+
+      await window.gapi.client.init({
+        clientId: CLIENT_ID,
+        scope: SCOPES
+      });
+      
+      await window.gapi.client.load("sheets", "v4");
+      setGapiLoaded(true);
+      setError(null);
+    } catch (error) {
+      console.error('Failed to initialize Google API:', error);
+      setError('Failed to load Google Sheets integration. Please refresh and try again.');
+    }
+  };
+
+  initializeGoogleAPI();
+}, []);
 
   // Add global styles with proper cleanup
   useEffect(() => {
