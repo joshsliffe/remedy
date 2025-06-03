@@ -217,7 +217,7 @@ async function loadGoogleAPI() {
       document.head.appendChild(script);
     });
   } catch (error) {
-    console.error('Failed to load Google API:', error);
+    console.error('Failed to load :', error);
     throw error;
   }
 }
@@ -673,39 +673,29 @@ function ScheduleApp() {
 
 // Load Google API with error handling
 useEffect(() => {
-  const initializeGoogleAPI = async () => {
-    try {
-      // Wait for the script to load
-      let attempts = 0;
-      while (!window.gapiLoaded && attempts < 100) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
-      
-      if (!window.gapi) {
-        setError('Google Sheets integration unavailable - you can still use the app without saving to sheets');
-        return;
-      }
-
-      await new Promise((resolve) => {
-        window.gapi.load('client:auth2', resolve);
+  const initializeGoogleAPI = () => {
+    // Simple check and retry approach
+    if (window.gapi) {
+      window.gapi.load('client:auth2', async () => {
+        try {
+          await window.gapi.client.init({
+            clientId: CLIENT_ID,
+            scope: SCOPES
+          });
+          await window.gapi.client.load("sheets", "v4");
+          setGapiLoaded(true);
+          setError(null);
+        } catch (error) {
+          setError('Google Sheets features disabled - app works for creating schedules');
+        }
       });
-
-      await window.gapi.client.init({
-        clientId: CLIENT_ID,
-        scope: SCOPES
-      });
-      
-      await window.gapi.client.load("sheets", "v4");
-      setGapiLoaded(true);
-      setError(null);
-    } catch (error) {
-      console.error('Google API error:', error);
-      setError('Google Sheets integration unavailable - you can still use the app without saving to sheets');
+    } else {
+      // Retry in 2 seconds
+      setTimeout(initializeGoogleAPI, 2000);
     }
   };
 
-  // Add a delay before trying to load
+  // Start trying after 1 second
   setTimeout(initializeGoogleAPI, 1000);
 }, []);
 
