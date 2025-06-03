@@ -7,14 +7,12 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://apis.google.com/js/api.js"></script>
+<script src="https://apis.google.com/js/api.js" onload="gapiLoaded = true"></script>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
         const { useState, useEffect, useMemo, useCallback } = React;
-        // PASTE THE ENTIRE REACT COMPONENT CODE FROM OUR MAIN ARTIFACT HERE
-        // Go back to the "Production Schedule Builder - Fixed Crew Contacts" artifact
 // Constants
 const CLIENT_ID = "326574680475-rp2ln01nqhp0j3eol3v652v7naaf3shp.apps.googleusercontent.com";
 const SCOPES = "https://www.googleapis.com/auth/spreadsheets";
@@ -677,22 +675,20 @@ function ScheduleApp() {
 useEffect(() => {
   const initializeGoogleAPI = async () => {
     try {
-      // Wait for gapi to be available
+      // Wait for the script to load
       let attempts = 0;
-      while (!window.gapi && attempts < 50) {
+      while (!window.gapiLoaded && attempts < 100) {
         await new Promise(resolve => setTimeout(resolve, 100));
         attempts++;
       }
       
       if (!window.gapi) {
-        throw new Error('Google API failed to load');
+        setError('Google Sheets integration unavailable - you can still use the app without saving to sheets');
+        return;
       }
 
-      await new Promise((resolve, reject) => {
-        window.gapi.load('client:auth2', {
-          callback: resolve,
-          onerror: reject
-        });
+      await new Promise((resolve) => {
+        window.gapi.load('client:auth2', resolve);
       });
 
       await window.gapi.client.init({
@@ -704,12 +700,13 @@ useEffect(() => {
       setGapiLoaded(true);
       setError(null);
     } catch (error) {
-      console.error('Failed to initialize Google API:', error);
-      setError('Failed to load Google Sheets integration. Please refresh and try again.');
+      console.error('Google API error:', error);
+      setError('Google Sheets integration unavailable - you can still use the app without saving to sheets');
     }
   };
 
-  initializeGoogleAPI();
+  // Add a delay before trying to load
+  setTimeout(initializeGoogleAPI, 1000);
 }, []);
 
   // Add global styles with proper cleanup
